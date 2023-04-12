@@ -1,7 +1,8 @@
-import React, { useContext } from "react";
+import React, { useContext, useState } from "react";
 
 import Modal from "../UI/Modal/Modal";
 import CartItem from "./CartItem";
+import CheckOut from "./CheckOut";
 
 import CartContext from "../../store/cart-context";
 
@@ -9,6 +10,7 @@ import styles from "./Cart.module.css";
 
 const Cart = (props) => {
   const cartCtx = useContext(CartContext);
+  const [checkOutIsVisible, setCheckOutIsVisible] = useState(false);
 
   const totalAmount = `$${cartCtx.totalAmount.toFixed(2)}`;
   const validateOrderBtn = cartCtx.totalAmount > 0;
@@ -18,6 +20,27 @@ const Cart = (props) => {
   };
   const CartItemAdd = (item) => {
     cartCtx.addItem({ ...item, amount: 1 });
+  };
+
+  const openCheckOut = () => {
+    setCheckOutIsVisible(true);
+  };
+
+  const cancelCheckOut = () => {
+    setCheckOutIsVisible(false);
+  };
+
+  const submitCheckoutHandler = (inputsValue) => {
+    fetch("https://react-app-9a38a-default-rtdb.firebaseio.com/orders.json", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        user: inputsValue,
+        meals: cartCtx.items,
+      }),
+    });
   };
 
   const cartItems = (
@@ -37,6 +60,19 @@ const Cart = (props) => {
     </ul>
   );
 
+  if (checkOutIsVisible) {
+    return (
+      <Modal onClick={props.onCloseCart}>
+        {cartItems}
+        <div className={styles.total}>
+          <div>Total Amount</div>
+          <div>{totalAmount}</div>
+        </div>
+        <CheckOut onSubmitCheckout={submitCheckoutHandler} onCancelCheckOut={cancelCheckOut} />
+      </Modal>
+    );
+  }
+
   return (
     <Modal onClick={props.onCloseCart}>
       {cartItems}
@@ -48,7 +84,11 @@ const Cart = (props) => {
         <button onClick={props.onCloseCart} className={styles["button--alt"]}>
           Close
         </button>
-        {validateOrderBtn && <button className={styles.button}>Order</button>}
+        {validateOrderBtn && (
+          <button onClick={openCheckOut} className={styles.button}>
+            Order
+          </button>
+        )}
       </div>
     </Modal>
   );
